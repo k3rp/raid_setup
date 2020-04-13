@@ -1,12 +1,8 @@
 function groupPlayersByName(raidSetup) {
-    playersByGroup = {}
+    const playersByGroup = {};
     for (let row = 0; row < raidSetup.length; row++) {
-        name = raidSetup[row][0];
-        className = raidSetup[row][1];
-        role = raidSetup[row][2];
-        playersByGroup[name] = Object();
-        playersByGroup[name].className = className;
-        playersByGroup[name].role = role;
+        const [name, className, role] = raidSetup[row];
+        playersByGroup[name] = { className, role };
     }
     return playersByGroup;
 }
@@ -196,7 +192,7 @@ function computeRazorgoreSetup(
     const playersGroupedByName = groupPlayersByName(raidSetup);
     let groups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
     populateTankGroups(4, groups, playersGroupedByName, tankPriority, meleeDpsPriority, improvedDevotionAuraPriority, improvedImpPriorty);
-    populateMeleeDpsGroups(groups, playersGroupedByName, meleeDpsPriority, debugRangedDpsPriority);
+    populateMeleeDpsGroups(groups, playersGroupedByName, meleeDpsPriority, rangedDpsPriority);
     populateCasterGroups(groups, playersGroupedByName, rangedDpsPriority);
     fillRemainingOpenSlots(groups, playersGroupedByName);
 
