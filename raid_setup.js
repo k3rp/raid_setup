@@ -90,6 +90,19 @@ function populateTankGroups(
     }
 }
 
+function populatePrayerOfHealing(groups, playersGroupedByName) {
+    // try to not put priests in tank groups
+    for (let i = 8; i >= 1; i--) {
+        // don't add healer if group is full, hello?!
+        if (groups[i].length == 5) continue;
+        // todo consider prio deep holy spec
+        const someHealer = findBestFitPlayer(playersGroupedByName, ['Priest'], [], 'Healer', []);
+        console.log("some healer", someHealer);
+        if (!someHealer) break;
+        groups[i].push(someHealer);
+    }
+}
+
 function populateMeleeDpsGroups(groups, playersGroupedByName, meleeDpsPriority, rangedDpsPriority) {
     // Populate hunters and warriors first, one in each group for trueshot aura and battle shout. 
     // Does every hunter have trueshot aura?
@@ -144,27 +157,26 @@ function fillRemainingOpenSlots(groups, playersGroupedByName) {
     };
 
     for (const name in playersGroupedByName) {
-        prefferedGroups = preferredGroupsByClass[playersGroupedByName[name].className];
+        const prefferedGroups = preferredGroupsByClass[playersGroupedByName[name].className];
         for (let i = 0; i < prefferedGroups.length; i++) {
             const group = prefferedGroups[i];
             if (groups[group].length < 5) {
                 groups[group].push(name);
                 break;
-            } else {
-                for (let j = 0; j < groups[group].length; j++) {
-                    if (groups[group][j] == null) {
-                        groups[group][j] = name;
-                        break;
-                    }
+            } 
+            for (let j = 0; j < groups[group].length; j++) {
+                if (groups[group][j] == null) {
+                    groups[group][j] = name;
+                    break;
                 }
             }
         }
     }
-    playersGroupedByName.length = 0;
 }
 
 function createRaidSetupFromGroups(groups) {
-    let raidSetup = [];
+    const raidSetup = [];
+
     for (let i = 1; i <= 8; i++) {
         let partySize = 0;
         for (let j = 0; j < groups[i].length; j++) {
@@ -190,7 +202,8 @@ function createRaidSetupFromGroups(groups) {
 function computeRazorgoreSetup(
     raidSetup, tankPriority, meleeDpsPriority, rangedDpsPriority, improvedDevotionAuraPriority, improvedImpPriorty) {
     const playersGroupedByName = groupPlayersByName(raidSetup);
-    let groups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
+    const groups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
+
     populateTankGroups(4, groups, playersGroupedByName, tankPriority, meleeDpsPriority, improvedDevotionAuraPriority, improvedImpPriorty);
     populateMeleeDpsGroups(groups, playersGroupedByName, meleeDpsPriority, rangedDpsPriority);
     populateCasterGroups(groups, playersGroupedByName, rangedDpsPriority);
@@ -203,7 +216,24 @@ function computeRazorgoreSetup(
     return finalRaidSetup;
 }
 
-debugRaidSetupStrList = [
+function computeVaelSetup(raidSetup, tankPrio, meleeDpsPrio, rangedDpsPrio, impDevoAuraPrio, impImpPrio) {
+    const playersGroupedByName = groupPlayersByName(raidSetup);
+    const groups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] };
+
+    populateTankGroups(4, groups, playersGroupedByName, tankPrio, meleeDpsPrio, rangedDpsPrio, impDevoAuraPrio, impImpPrio);
+    populateMeleeDpsGroups(groups, playersGroupedByName, meleeDpsPrio, rangedDpsPrio);
+    populatePrayerOfHealing(groups, playersGroupedByName);
+    populateCasterGroups(groups, playersGroupedByName, rangedDpsPrio);
+    fillRemainingOpenSlots(groups, playersGroupedByName);
+
+    const finalRaidSetup = createRaidSetupFromGroups(groups);
+    debugPrintSetup(finalRaidSetup);
+    //console.log(groups);
+
+    return finalRaidSetup;
+}
+
+const debugRaidSetupStrList = [
     "Inglewood	Warrior	Tank",
     "Zambonior	Warrior	Tank",
     "Gingerpojken	Paladin	Healer",
@@ -246,15 +276,13 @@ debugRaidSetupStrList = [
     "Daddyyyankie	Druid	Healer"
 ];
 
-debugRaidSetup = [];
-for (let i = 0; i < debugRaidSetupStrList.length; i++) {
-    debugRaidSetup.push(debugRaidSetupStrList[i].split('\t'));
-}
+const debugRaidSetup = debugRaidSetupStrList.map(line => line.split('\t'));
 
-debugTankPrio = ["Zambonior", "Inglewood", "Samanta", "Kolmo", "Cusman", "Drogomir"];
-debugMeleeDpsPriority = ["Ylf", "Nievo", "Furyk", "Mogen", "Steffrik", "Garlarock", "Cusman", "Kolmo"];
-debugRangedDpsPriority = ["Kerpz", "Cewe", "Vessa", "Analius", "Tristam", "Tobhi"];
-debugImpDevotionAura = ["Uum", "Gingerpojken"];
-debugImpImp = ["Idsint", "Shortylock"];
+const debugTankPrio = ["Zambonior", "Inglewood", "Samanta", "Kolmo", "Cusman", "Drogomir"];
+const debugMeleeDpsPriority = ["Ylf", "Nievo", "Furyk", "Mogen", "Steffrik", "Garlarock", "Cusman", "Kolmo"];
+const debugRangedDpsPriority = ["Kerpz", "Cewe", "Vessa", "Analius", "Tristam", "Tobhi"];
+const debugImpDevotionAura = ["Uum", "Gingerpojken"];
+const debugImpImp = ["Idsint", "Shortylock"];
 
-computeRazorgoreSetup(debugRaidSetup, debugTankPrio, debugMeleeDpsPriority, debugRangedDpsPriority, debugImpDevotionAura, debugImpImp);
+//computeRazorgoreSetup(debugRaidSetup, debugTankPrio, debugMeleeDpsPriority, debugRangedDpsPriority, debugImpDevotionAura, debugImpImp);
+computeVaelSetup(debugRaidSetup, debugTankPrio, debugMeleeDpsPriority, debugRangedDpsPriority, debugImpDevotionAura, debugImpImp);
